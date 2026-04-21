@@ -1,70 +1,53 @@
-name: "Генерация статьи из Issue"
+name: "📝 Новая статья"
+description: "Создать новую статью для блога"
+title: "[СТАТЬЯ]: "
+labels: ["article"]
+body:
+  - type: input
+    id: title
+    attributes:
+      label: "Заголовок статьи"
+      placeholder: "Как отремонтировать диван"
+    validations:
+      required: true
 
-on:
-  issues:
-    types: [opened]
+  - type: dropdown
+    id: category
+    attributes:
+      label: "Рубрика"
+      options:
+        - "Ремонт"
+        - "Идеи"
+        - "Декор"
+    validations:
+      required: true
 
-jobs:
-  generate:
-    runs-on: ubuntu-latest
-    permissions:
-      issues: write
-      contents: read
+  - type: input
+    id: description
+    attributes:
+      label: "Краткое описание"
+      placeholder: "Пошаговая инструкция по ремонту дивана"
+    validations:
+      required: true
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  - type: input
+    id: image
+    attributes:
+      label: "Имя картинки"
+      description: "Файл должен лежать в папке /images/"
+      placeholder: "divan.jpg"
+    validations:
+      required: true
 
-      - name: Парсинг и создание файла
-        run: |
-          # Устанавливаем jq
-          sudo apt-get install -y jq
+  - type: textarea
+    id: content
+    attributes:
+      label: "Текст статьи"
+      description: "Пиши в Markdown. Заголовки H2 начинай с ##"
+      placeholder: |
+        ## 1. Планирование
+        Сначала продумай всё...
 
-          # Получаем данные Issue
-          ISSUE_NUMBER=${{ github.event.issue.number }}
-          ISSUE_BODY=$(gh issue view $ISSUE_NUMBER --json body -q '.body')
-
-          # Извлекаем поля
-          TITLE=$(echo "$ISSUE_BODY" | sed -n '/### Заголовок статьи/,/###/p' | tail -n +2 | head -1 | xargs)
-          CATEGORY=$(echo "$ISSUE_BODY" | sed -n '/### Рубрика/,/###/p' | tail -n +2 | head -1 | xargs)
-          DESCRIPTION=$(echo "$ISSUE_BODY" | sed -n '/### Краткое описание/,/###/p' | tail -n +2 | head -1 | xargs)
-          IMAGE=$(echo "$ISSUE_BODY" | sed -n '/### Имя картинки/,/###/p' | tail -n +2 | head -1 | xargs)
-          CONTENT=$(echo "$ISSUE_BODY" | sed -n '/### Текст статьи/,$p' | tail -n +2)
-
-          # Имя файла из заголовка
-          SLUG=$(echo "$TITLE" | tr ' ' '-' | tr -cd 'a-zA-Z0-9\-' | tr '[:upper:]' '[:lower:]')
-          DATE=$(date +'%Y-%m-%d')
-
-          # Создаём папку
-          mkdir -p posts
-
-          # Создаём файл
-          cat > "posts/${SLUG}.md" << EOF
----
-title: "${TITLE}"
-date: "${DATE}"
-category: "${CATEGORY}"
-description: "${DESCRIPTION}"
-image: "/images/${IMAGE}"
-layout: layout.njk
----
-
-<div class="article">
-    <h1>{{ title }}</h1>
-    <div class="meta">📅 {{ date | date: "%d.%m.%Y" }} • {{ category }}</div>
-
-    <img src="{{ image }}" alt="">
-
-    ${CONTENT}
-</div>
-EOF
-          echo "✅ Создан файл: posts/${SLUG}.md"
-
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Загрузить артефакт
-        uses: actions/upload-artifact@v4
-        with:
-          name: article
-          path: posts/*.md
+        > 💡 Совет: Не забудь заложить бюджет
+    validations:
+      required: true
