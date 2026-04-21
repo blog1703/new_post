@@ -65,6 +65,14 @@
             font-size: 12px;
             color: #666;
             text-align: center;
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .note code {
+            background: #eee;
+            padding: 2px 5px;
+            border-radius: 4px;
         }
     </style>
 </head>
@@ -90,6 +98,14 @@
 
     <label>Текст статьи (Markdown)</label>
     <textarea id="content" placeholder="## 1. Планирование&#10;Сначала продумай всё...&#10;&#10;> 💡 Совет: Не забудь заложить бюджет"></textarea>
+
+    <div class="note">
+        💡 Подсказки по форматированию:<br>
+        • <code>## Заголовок</code> — заголовок второго уровня (H2)<br>
+        • <code>Текст</code> — обычный абзац<br>
+        • <code>![описание](images/photo.png)</code> — вставка картинки внутри статьи<br>
+        • <code>&gt; 💡 Совет</code> — цитата (блок советов)
+    </div>
 
     <button id="downloadBtn">📥 Скачать статью</button>
     <div class="note">Файл скачается в формате .md. Положи его в папку posts/ вашего проекта.</div>
@@ -118,17 +134,34 @@
         const category = document.getElementById('category').value;
         const description = document.getElementById('description').value;
         const image = document.getElementById('image').value;
-        const content = document.getElementById('content').value;
+        let content = document.getElementById('content').value;
         
-        // МОСКОВСКОЕ ВРЕМЯ (MSK, UTC+3)
+        // Московское время (MSK, UTC+3)
         const now = new Date();
         const mskTime = new Date(now.getTime() + (3 * 60 * 60 * 1000));
         const date = mskTime.toISOString().slice(0, 10);
         
-        // Генерация имени файла (транслитерация + нижний регистр)
+        // Генерация имени файла
         const slug = transliterate(title).toLowerCase();
         
-        const frontMatter = `---
+        // Автоматическая обёртка текста (если не начинается с тегов)
+        if (!content.trim().startsWith('<p>') && !content.trim().startsWith('<h2>')) {
+            // Разбиваем на абзацы и заголовки
+            const lines = content.split('\n');
+            let wrapped = '';
+            for (let line of lines) {
+                if (line.trim().startsWith('##')) {
+                    wrapped += line + '\n';
+                } else if (line.trim()) {
+                    wrapped += `<p>${line}</p>\n`;
+                } else {
+                    wrapped += '\n';
+                }
+            }
+            content = wrapped;
+        }
+        
+        const fileContent = `---
 title: "${title}"
 date: "${date}"
 category: "${category}"
@@ -148,7 +181,7 @@ ${content}
 `;
         
         // Скачивание файла
-        const blob = new Blob([frontMatter], { type: 'text/markdown' });
+        const blob = new Blob([fileContent], { type: 'text/markdown' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = `${slug}.md`;
