@@ -15,23 +15,65 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Создать файл из Issue
+      - name: Установка утилит
+        run: sudo apt-get install -y jq moreutils
+
+      - name: Создание файла статьи
         run: |
+          # Получаем тело Issue
           ISSUE_BODY=$(gh issue view ${{ github.event.issue.number }} --json body -q '.body')
-          TITLE=$(echo "$ISSUE_BODY" | grep -A 10 "Заголовок статьи" | tail -1 | sed 's/^- //')
+
+          # Извлекаем поля
+          TITLE=$(echo "$ISSUE_BODY" | sed -n '/### Заголовок статьи/,/###/p' | tail -n +2 | head -1 | sed 's/^- //' | xargs)
+          CATEGORY=$(echo "$ISSUE_BODY" | sed -n '/### Рубрика/,/###/p' | tail -n +2 | head -1 | xargs)
+          DESCRIPTION=$(echo "$ISSUE_BODY" | sed -n '/### Краткое описание/,/###/p' | tail -n +2 | head -1 | sed 's/^- //' | xargs)
+          IMAGE=$(echo "$ISSUE_BODY" | sed -n '/### Имя картинки/,/###/p' | tail -n +2 | head -1 | xargs)
+          CONTENT=$(echo "$ISSUE_BODY" | sed -n '/### Текст статьи/,$p' | tail -n +2 | sed '/^$/d')
+
+          # Генерация имени файла из заголовка
+          SLUG=$(echo "$TITLE" | iconv -f utf-8 -t ascii//translit | tr ' ' '-' | tr -cd 'a-zA-Z0-9\-' | tr '[:upper:]' '[:lower:]')
           DATE=$(date +'%Y-%m-%d')
+
+          # Создаём папку
           mkdir -p posts
-          echo "---" > posts/test.md
-          echo "title: \"${TITLE}\"" >> posts/test.md
-          echo "date: \"${DATE}\"" >> posts/test.md
-          echo "layout: layout.njk" >> posts/test.md
-          echo "---" >> posts/test.md
-          echo "" >> posts/test.md
-          echo "# ${TITLE}" >> posts/test.md
+
+          # Создаём Markdown-файл
+          cat > "posts/${SLUG}.md" << 'EOF'
+---
+title: "TITLE_PLACEHOLDER"
+date: "DATE_PLACEHOLDER"
+category: "CATEGORY_PLACEHOLDER"
+description: "DESCRIPTION_PLACEHOLDER"
+image: "/images/IMAGE_PLACEHOLDER"
+layout: layout.njk
+---
+
+<div class="article">
+    <h1>{{ title }}</h1>
+    <div class="meta">📅 {{ date | date: "%d.%m.%Y" }} • {{ category }}</div>
+
+    <img src="{{ image }}" alt="">
+
+    CONTENT_PLACEHOLDER
+</div>
+EOF
+
+          # Заменяем плейсхолдеры на реальные значения
+          sed -i "s|TITLE_PLACEHOLDER|${TITLE}|g" "posts/${SLUG}.md"
+          sed -i "s|DATE_PLACEHOLDER|${DATE}|g" "posts/${SLUG}.md"
+          sed -i "s|CATEGORY_PLACEHOLDER|${CATEGORY}|g" "posts/${SLUG}.md"
+          sed -i "s|DESCRIPTION_PLACEHOLDER|${DESCRIPTION}|g" "posts/${SLUG}.md"
+          sed -i "s|IMAGE_PLACEHOLDER|${IMAGE}|g" "posts/${SLUG}.md"
+          
+          # Вставляем содержимое статьи (многострочное)
+          awk -v content="${CONTENT}" '/CONTENT_PLACEHOLDER/{print content; next}1' "posts/${SLUG}.md" > "posts/${SLUG}.tmp" && mv "posts/${SLUG}.tmp" "posts/${SLUG}.md"
+          
+          echo "✅ Создан файл: posts/${SLUG}.md"
+
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload artifact
+      - name: Загрузить артефакт
         uses: actions/upload-artifact@v4
         with:
           name: article
