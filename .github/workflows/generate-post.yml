@@ -30,12 +30,24 @@ jobs:
           # Извлекаем тело Issue
           ISSUE_BODY=$(echo "$ISSUE_DATA" | jq -r '.body')
 
+          # ОТЛАДКА: выводим тело Issue
+          echo "=== ISSUE_BODY ==="
+          echo "$ISSUE_BODY"
+          echo "=================="
+
           # Извлекаем поля формы
           TITLE=$(echo "$ISSUE_BODY" | awk '/### Заголовок статьи/{getline; print}' | sed 's/^- //' | xargs)
           CATEGORY=$(echo "$ISSUE_BODY" | awk '/### Рубрика/{getline; print}' | xargs)
           DESCRIPTION=$(echo "$ISSUE_BODY" | awk '/### Краткое описание/{getline; print}' | sed 's/^- //' | xargs)
           IMAGE=$(echo "$ISSUE_BODY" | awk '/### Имя картинки/{getline; print}' | xargs)
           CONTENT=$(echo "$ISSUE_BODY" | sed -n '/### Текст статьи/,$p' | tail -n +2)
+
+          # ОТЛАДКА: выводим извлечённые поля
+          echo "TITLE: $TITLE"
+          echo "CATEGORY: $CATEGORY"
+          echo "DESCRIPTION: $DESCRIPTION"
+          echo "IMAGE: $IMAGE"
+          echo "CONTENT: $CONTENT"
 
           # Генерация имени файла
           SLUG=$(echo "$TITLE" | tr ' ' '-' | tr -cd 'a-zA-Z0-9\-' | tr '[:upper:]' '[:lower:]')
@@ -65,6 +77,9 @@ ${CONTENT}
 </div>
 EOF
           echo "✅ Создан файл: posts/${SLUG}.md"
+          
+          # Проверяем, что файл создался
+          ls -la posts/
 
       - name: Загрузить артефакт
         uses: actions/upload-artifact@v4
