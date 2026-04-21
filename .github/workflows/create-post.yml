@@ -1,0 +1,78 @@
+name: "📝 Создать новую статью"
+
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: "Заголовок статьи"
+        required: true
+        type: string
+      category:
+        description: "Рубрика"
+        required: true
+        type: choice
+        options:
+          - "Ремонт"
+          - "Идеи"
+          - "Декор"
+      description:
+        description: "Краткое описание"
+        required: true
+        type: string
+      image:
+        description: "Имя файла картинки (например, divan.jpg)"
+        required: true
+        type: string
+      content:
+        description: "Текст статьи (Markdown)"
+        required: true
+        type: string
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Создать файл статьи
+        run: |
+          # Генерация имени файла из заголовка
+          SLUG=$(echo "${{ inputs.title }}" | tr ' ' '-' | tr -cd 'a-zA-Z0-9\-' | tr '[:upper:]' '[:lower:]')
+          DATE=$(date +'%Y-%m-%d')
+          
+          # Создаём папку posts
+          mkdir -p posts
+          
+          # Создаём Markdown-файл
+          cat > "posts/${SLUG}.md" << 'EOF'
+---
+title: "${{ inputs.title }}"
+date: "${DATE}"
+category: "${{ inputs.category }}"
+description: "${{ inputs.description }}"
+image: "/images/${{ inputs.image }}"
+layout: layout.njk
+---
+
+<div class="article">
+    <h1>{{ title }}</h1>
+    <div class="meta">📅 {{ date | date: "%d.%m.%Y" }} • {{ category }}</div>
+
+    <img src="{{ image }}" alt="">
+
+${{ inputs.content }}
+</div>
+EOF
+          echo "✅ Создан файл: posts/${SLUG}.md"
+
+      - name: Commit и Push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add posts/
+          git commit -m "📝 Добавлена статья: ${{ inputs.title }}" || echo "Нет изменений для коммита"
+          git push
