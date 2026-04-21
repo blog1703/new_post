@@ -15,39 +15,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Установка jq
-        run: sudo apt-get install -y jq
-
-      - name: Получение и парсинг Issue
+      - name: Создание файла статьи
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Получаем данные Issue через API
-          ISSUE_DATA=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}")
-          
-          # Извлекаем тело Issue
-          ISSUE_BODY=$(echo "$ISSUE_DATA" | jq -r '.body')
+          # Получаем тело Issue
+          ISSUE_BODY=$(gh issue view ${{ github.event.issue.number }} --json body -q '.body')
 
-          # ОТЛАДКА: выводим тело Issue
-          echo "=== ISSUE_BODY ==="
-          echo "$ISSUE_BODY"
-          echo "=================="
-
-          # Извлекаем поля формы
-          TITLE=$(echo "$ISSUE_BODY" | awk '/### Заголовок статьи/{getline; print}' | sed 's/^- //' | xargs)
-          CATEGORY=$(echo "$ISSUE_BODY" | awk '/### Рубрика/{getline; print}' | xargs)
-          DESCRIPTION=$(echo "$ISSUE_BODY" | awk '/### Краткое описание/{getline; print}' | sed 's/^- //' | xargs)
-          IMAGE=$(echo "$ISSUE_BODY" | awk '/### Имя картинки/{getline; print}' | xargs)
-          CONTENT=$(echo "$ISSUE_BODY" | sed -n '/### Текст статьи/,$p' | tail -n +2)
-
-          # ОТЛАДКА: выводим извлечённые поля
-          echo "TITLE: $TITLE"
-          echo "CATEGORY: $CATEGORY"
-          echo "DESCRIPTION: $DESCRIPTION"
-          echo "IMAGE: $IMAGE"
-          echo "CONTENT: $CONTENT"
+          # Извлекаем поля (простой способ через grep)
+          TITLE=$(echo "$ISSUE_BODY" | grep -A 10 "Заголовок статьи" | tail -1 | sed 's/^- //' | xargs)
+          CATEGORY=$(echo "$ISSUE_BODY" | grep -A 10 "Рубрика" | tail -1 | xargs)
+          DESCRIPTION=$(echo "$ISSUE_BODY" | grep -A 10 "Краткое описание" | tail -1 | sed 's/^- //' | xargs)
+          IMAGE=$(echo "$ISSUE_BODY" | grep -A 10 "Имя картинки" | tail -1 | xargs)
+          CONTENT=$(echo "$ISSUE_BODY" | sed -n '/Текст статьи/,$p' | tail -n +2)
 
           # Генерация имени файла
           SLUG=$(echo "$TITLE" | tr ' ' '-' | tr -cd 'a-zA-Z0-9\-' | tr '[:upper:]' '[:lower:]')
@@ -77,11 +57,8 @@ ${CONTENT}
 </div>
 EOF
           echo "✅ Создан файл: posts/${SLUG}.md"
-          
-          # Проверяем, что файл создался
-          ls -la posts/
 
-      - name: Загрузить артефакт
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: article
