@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор статей | Угол Дома</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f4f4f5;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        h1 {
+            font-family: 'Playfair Display', serif;
+            margin-bottom: 20px;
+            color: #038798;
+        }
+        label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        textarea {
+            min-height: 300px;
+            font-family: monospace;
+        }
+        button {
+            margin-top: 20px;
+            background: #038798;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        button:hover {
+            background: #026b78;
+        }
+        .note {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📝 Генератор статей</h1>
+    
+    <label>Заголовок статьи</label>
+    <input type="text" id="title" placeholder="Как отремонтировать диван">
+
+    <label>Рубрика</label>
+    <select id="category">
+        <option value="Ремонт">Ремонт</option>
+        <option value="Идеи">Идеи</option>
+        <option value="Декор">Декор</option>
+    </select>
+
+    <label>Краткое описание (description)</label>
+    <input type="text" id="description" placeholder="Пошаговая инструкция по ремонту дивана">
+
+    <label>Имя картинки (например, divan.jpg)</label>
+    <input type="text" id="image" placeholder="divan.jpg">
+
+    <label>Текст статьи (Markdown)</label>
+    <textarea id="content" placeholder="## 1. Планирование&#10;Сначала продумай всё...&#10;&#10;> 💡 Совет: Не забудь заложить бюджет"></textarea>
+
+    <button id="downloadBtn">📥 Скачать статью</button>
+    <div class="note">Файл скачается в формате .md. Положи его в папку posts/ вашего проекта.</div>
+</div>
+
+<script>
+    document.getElementById('downloadBtn').addEventListener('click', function() {
+        const title = document.getElementById('title').value;
+        const category = document.getElementById('category').value;
+        const description = document.getElementById('description').value;
+        const image = document.getElementById('image').value;
+        const content = document.getElementById('content').value;
+        const date = new Date().toISOString().slice(0, 10);
+        
+        // Генерация имени файла из заголовка
+        const slug = title
+            .toLowerCase()
+            .replace(/[^а-яa-z0-9]/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-|-$/g, '');
+        
+        const frontMatter = `---
+title: "${title}"
+date: "${date}"
+category: "${category}"
+description: "${description}"
+image: "/images/${image}"
+layout: layout.njk
+---
+
+<div class="article">
+    <h1>{{ title }}</h1>
+    <div class="meta">📅 {{ date | date: "%d.%m.%Y" }} • {{ category }}</div>
+
+    <img src="{{ image }}" alt="">
+
+${content}
+</div>
+`;
+        
+        // Скачивание файла
+        const blob = new Blob([frontMatter], { type: 'text/markdown' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `${slug}.md`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+    });
+</script>
+</body>
+</html>
