@@ -19,15 +19,29 @@ jobs:
         run: |
           ISSUE_BODY=$(gh issue view ${{ github.event.issue.number }} --json body -q '.body')
           TITLE=$(echo "$ISSUE_BODY" | grep -A 10 "Заголовок статьи" | tail -1 | sed 's/^- //')
+          CATEGORY=$(echo "$ISSUE_BODY" | grep -A 10 "Рубрика" | tail -1 | sed 's/^- //')
+          DESCRIPTION=$(echo "$ISSUE_BODY" | grep -A 10 "Краткое описание" | tail -1 | sed 's/^- //')
+          IMAGE=$(echo "$ISSUE_BODY" | grep -A 10 "Имя картинки" | tail -1 | sed 's/^- //')
           DATE=$(date +'%Y-%m-%d')
+          
+          # Генерация имени файла из заголовка
+          SLUG=$(echo "$TITLE" | tr ' ' '-' | tr -cd 'a-zA-Z0-9\-' | tr '[:upper:]' '[:lower:]')
+          
           mkdir -p posts
-          echo "---" > posts/test.md
-          echo "title: \"${TITLE}\"" >> posts/test.md
-          echo "date: \"${DATE}\"" >> posts/test.md
-          echo "layout: layout.njk" >> posts/test.md
-          echo "---" >> posts/test.md
-          echo "" >> posts/test.md
-          echo "# ${TITLE}" >> posts/test.md
+          cat > "posts/${SLUG}.md" <<EOF
+---
+title: "${TITLE}"
+date: "${DATE}"
+category: "${CATEGORY}"
+description: "${DESCRIPTION}"
+image: "/images/${IMAGE}"
+layout: layout.njk
+---
+
+# ${TITLE}
+
+Текст статьи...
+EOF
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
