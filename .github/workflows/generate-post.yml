@@ -15,48 +15,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Создание файла статьи
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Создать файл из Issue
         run: |
-          # Получаем тело Issue
           ISSUE_BODY=$(gh issue view ${{ github.event.issue.number }} --json body -q '.body')
-
-          # Извлекаем поля (простой способ через grep)
-          TITLE=$(echo "$ISSUE_BODY" | grep -A 10 "Заголовок статьи" | tail -1 | sed 's/^- //' | xargs)
-          CATEGORY=$(echo "$ISSUE_BODY" | grep -A 10 "Рубрика" | tail -1 | xargs)
-          DESCRIPTION=$(echo "$ISSUE_BODY" | grep -A 10 "Краткое описание" | tail -1 | sed 's/^- //' | xargs)
-          IMAGE=$(echo "$ISSUE_BODY" | grep -A 10 "Имя картинки" | tail -1 | xargs)
-          CONTENT=$(echo "$ISSUE_BODY" | sed -n '/Текст статьи/,$p' | tail -n +2)
-
-          # Генерация имени файла
-          SLUG=$(echo "$TITLE" | tr ' ' '-' | tr -cd 'a-zA-Z0-9\-' | tr '[:upper:]' '[:lower:]')
+          TITLE=$(echo "$ISSUE_BODY" | grep -A 10 "Заголовок статьи" | tail -1 | sed 's/^- //')
           DATE=$(date +'%Y-%m-%d')
-
-          # Создаём папку
+          
+          # Генерация имени файла из заголовка
+          SLUG=$(echo "$TITLE" | tr ' ' '-' | tr -cd 'a-zA-Z0-9\-' | tr '[:upper:]' '[:lower:]')
+          
           mkdir -p posts
-
-          # Создаём Markdown-файл
           cat > "posts/${SLUG}.md" <<EOF
 ---
 title: "${TITLE}"
 date: "${DATE}"
-category: "${CATEGORY}"
-description: "${DESCRIPTION}"
-image: "/images/${IMAGE}"
 layout: layout.njk
 ---
 
-<div class="article">
-    <h1>{{ title }}</h1>
-    <div class="meta">📅 {{ date | date: "%d.%m.%Y" }} • {{ category }}</div>
+# ${TITLE}
 
-    <img src="{{ image }}" alt="">
-
-${CONTENT}
-</div>
+Текст статьи...
 EOF
-          echo "✅ Создан файл: posts/${SLUG}.md"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
