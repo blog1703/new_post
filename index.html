@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Визуальный редактор статей | Угол Дома</title>
-    <!-- Подключаем EasyMDE (простой визуальный редактор Markdown) -->
+    <!-- Подключаем EasyMDE -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
     <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
     <style>
@@ -67,17 +67,28 @@
             padding: 10px;
             border-radius: 8px;
         }
-        .note code {
-            background: #eee;
-            padding: 2px 5px;
-            border-radius: 4px;
+        /* Исправляем цвет иконок в тулбаре */
+        .editor-toolbar button {
+            color: #333 !important;
+        }
+        .editor-toolbar button:hover {
+            background: #e0e0e0 !important;
+        }
+        .editor-toolbar i.separator {
+            border-left: 1px solid #ddd !important;
+        }
+        .CodeMirror {
+            min-height: 400px;
+            font-size: 14px;
         }
         .editor-toolbar {
             border-radius: 8px 8px 0 0;
+            border: 1px solid #ddd;
         }
         .CodeMirror {
             border-radius: 0 0 8px 8px;
-            min-height: 400px;
+            border: 1px solid #ddd;
+            border-top: none;
         }
     </style>
 </head>
@@ -132,7 +143,11 @@
             'quote', 'link', 'image', '|',
             'preview', 'side-by-side', 'fullscreen', '|',
             'guide'
-        ]
+        ],
+        status: false,
+        renderingConfig: {
+            codeSyntaxHighlighting: false,
+        }
     });
 
     // Функция транслитерации
@@ -157,7 +172,7 @@
         const category = document.getElementById('category').value;
         const description = document.getElementById('description').value;
         const image = document.getElementById('image').value;
-        const content = easyMDE.value(); // Получаем Markdown из редактора
+        const content = easyMDE.value();
         
         // Московское время
         const now = new Date();
