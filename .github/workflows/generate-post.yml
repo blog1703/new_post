@@ -15,24 +15,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Установка утилит
-        run: sudo apt-get install -y jq
-
-      - name: Создание файла статьи
+      - name: Получение данных Issue через API
         env:
-          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Получаем тело Issue
-          ISSUE_BODY=$(gh issue view ${{ github.event.issue.number }} --json body -q '.body')
+          # Получаем Issue через API
+          ISSUE_DATA=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}")
+          
+          # Извлекаем тело Issue
+          ISSUE_BODY=$(echo "$ISSUE_DATA" | jq -r '.body')
 
-          # Извлекаем поля
+          # Извлекаем поля формы
           TITLE=$(echo "$ISSUE_BODY" | sed -n '/### Заголовок статьи/,/###/p' | tail -n +2 | head -1 | sed 's/^- //' | xargs)
           CATEGORY=$(echo "$ISSUE_BODY" | sed -n '/### Рубрика/,/###/p' | tail -n +2 | head -1 | xargs)
           DESCRIPTION=$(echo "$ISSUE_BODY" | sed -n '/### Краткое описание/,/###/p' | tail -n +2 | head -1 | sed 's/^- //' | xargs)
           IMAGE=$(echo "$ISSUE_BODY" | sed -n '/### Имя картинки/,/###/p' | tail -n +2 | head -1 | xargs)
           CONTENT=$(echo "$ISSUE_BODY" | sed -n '/### Текст статьи/,$p' | tail -n +2)
 
-          # Генерация имени файла из заголовка
+          # Генерация имени файла
           SLUG=$(echo "$TITLE" | tr ' ' '-' | tr -cd 'a-zA-Z0-9\-' | tr '[:upper:]' '[:lower:]')
           DATE=$(date +'%Y-%m-%d')
 
