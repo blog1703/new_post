@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Генератор статей | Угол Дома</title>
+    <title>Визуальный редактор статей | Угол Дома</title>
+    <!-- Подключаем EasyMDE (простой визуальный редактор Markdown) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -16,7 +19,7 @@
             padding: 40px 20px;
         }
         .container {
-            max-width: 800px;
+            max-width: 1000px;
             margin: 0 auto;
             background: white;
             padding: 30px;
@@ -34,17 +37,12 @@
             margin-bottom: 5px;
             font-weight: 600;
         }
-        input, select, textarea {
+        input, select {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 8px;
-            font-family: monospace;
             font-size: 14px;
-        }
-        textarea {
-            min-height: 300px;
-            font-family: monospace;
         }
         button {
             margin-top: 20px;
@@ -74,11 +72,18 @@
             padding: 2px 5px;
             border-radius: 4px;
         }
+        .editor-toolbar {
+            border-radius: 8px 8px 0 0;
+        }
+        .CodeMirror {
+            border-radius: 0 0 8px 8px;
+            min-height: 400px;
+        }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>📝 Генератор статей</h1>
+    <h1>📝 Визуальный редактор статей</h1>
     
     <label>Заголовок статьи</label>
     <input type="text" id="title" placeholder="Как отремонтировать диван">
@@ -93,18 +98,22 @@
     <label>Краткое описание (description)</label>
     <input type="text" id="description" placeholder="Пошаговая инструкция по ремонту дивана">
 
-    <label>Имя картинки (например, divan.jpg)</label>
+    <label>Имя картинки для шапки статьи (например, divan.jpg)</label>
     <input type="text" id="image" placeholder="divan.jpg">
 
-    <label>Текст статьи (Markdown)</label>
-    <textarea id="content" placeholder="## 1. Планирование&#10;Сначала продумай всё...&#10;&#10;> 💡 Совет: Не забудь заложить бюджет"></textarea>
+    <label>Текст статьи (визуальный редактор)</label>
+    <textarea id="content" placeholder="## 1. Планирование&#10;Сначала продумай всё..."></textarea>
 
     <div class="note">
-        💡 Подсказки по форматированию:<br>
-        • <code>## Заголовок</code> — заголовок второго уровня (H2)<br>
-        • <code>Текст</code> — обычный абзац<br>
-        • <code>![описание](images/photo.png)</code> — вставка картинки внутри статьи<br>
-        • <code>&gt; 💡 Совет</code> — цитата (блок советов)
+        💡 Инструменты редактора:<br>
+        • <strong>B</strong> — жирный текст<br>
+        • <strong><em>I</em></strong> — курсив<br>
+        • <strong>#</strong> — заголовки<br>
+        • <strong>•</strong> — маркированный список<br>
+        • <strong>1.</strong> — нумерованный список<br>
+        • <strong>"</strong> — цитата<br>
+        • <strong>🔗</strong> — ссылка<br>
+        • <strong>🖼️</strong> — вставка картинки
     </div>
 
     <button id="downloadBtn">📥 Скачать статью</button>
@@ -112,7 +121,21 @@
 </div>
 
 <script>
-    // Функция транслитерации (русский → латиница)
+    // Инициализация визуального редактора
+    const easyMDE = new EasyMDE({
+        element: document.getElementById('content'),
+        spellChecker: false,
+        placeholder: '## 1. Планирование\n\nСначала продумай всё...\n\n> 💡 Совет: Не забудь заложить бюджет\n\n## 2. Материалы\n\nНе обязательно покупать всё дорогое.',
+        toolbar: [
+            'bold', 'italic', 'heading', '|',
+            'unordered-list', 'ordered-list', '|',
+            'quote', 'link', 'image', '|',
+            'preview', 'side-by-side', 'fullscreen', '|',
+            'guide'
+        ]
+    });
+
+    // Функция транслитерации
     function transliterate(word) {
         const map = {
             'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'e',
@@ -134,32 +157,15 @@
         const category = document.getElementById('category').value;
         const description = document.getElementById('description').value;
         const image = document.getElementById('image').value;
-        let content = document.getElementById('content').value;
+        const content = easyMDE.value(); // Получаем Markdown из редактора
         
-        // Московское время (MSK, UTC+3)
+        // Московское время
         const now = new Date();
         const mskTime = new Date(now.getTime() + (3 * 60 * 60 * 1000));
         const date = mskTime.toISOString().slice(0, 10);
         
-        // Генерация имени файла
+        // Имя файла
         const slug = transliterate(title).toLowerCase();
-        
-        // Автоматическая обёртка текста (если не начинается с тегов)
-        if (!content.trim().startsWith('<p>') && !content.trim().startsWith('<h2>')) {
-            // Разбиваем на абзацы и заголовки
-            const lines = content.split('\n');
-            let wrapped = '';
-            for (let line of lines) {
-                if (line.trim().startsWith('##')) {
-                    wrapped += line + '\n';
-                } else if (line.trim()) {
-                    wrapped += `<p>${line}</p>\n`;
-                } else {
-                    wrapped += '\n';
-                }
-            }
-            content = wrapped;
-        }
         
         const fileContent = `---
 title: "${title}"
@@ -180,7 +186,7 @@ ${content}
 </div>
 `;
         
-        // Скачивание файла
+        // Скачивание
         const blob = new Blob([fileContent], { type: 'text/markdown' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
