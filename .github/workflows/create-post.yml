@@ -33,6 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: read
 
     steps:
       - name: Checkout
@@ -48,7 +49,7 @@ jobs:
           mkdir -p posts
           
           # Создаём Markdown-файл
-          cat > "posts/${SLUG}.md" << 'EOF'
+          cat > "posts/${SLUG}.md" << 'MARKDOWN'
 ---
 title: "${{ inputs.title }}"
 date: "${DATE}"
@@ -66,13 +67,17 @@ layout: layout.njk
 
 ${{ inputs.content }}
 </div>
-EOF
-          echo "✅ Создан файл: posts/${SLUG}.md"
+MARKDOWN
+          
+          echo "✅ Файл создан: posts/${SLUG}.md"
+          echo "Содержимое папки posts:"
+          ls -la posts/
 
       - name: Commit и Push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add posts/
+          git status
           git commit -m "📝 Добавлена статья: ${{ inputs.title }}" || echo "Нет изменений для коммита"
-          git push
+          git push origin HEAD:main
