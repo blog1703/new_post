@@ -20,22 +20,14 @@ jobs:
           ISSUE_BODY=$(gh issue view ${{ github.event.issue.number }} --json body -q '.body')
           TITLE=$(echo "$ISSUE_BODY" | grep -A 10 "Заголовок статьи" | tail -1 | sed 's/^- //')
           DATE=$(date +'%Y-%m-%d')
-          
-          # Генерация имени файла из заголовка
-          SLUG=$(echo "$TITLE" | tr ' ' '-' | tr -cd 'a-zA-Z0-9\-' | tr '[:upper:]' '[:lower:]')
-          
           mkdir -p posts
-          cat > "posts/${SLUG}.md" <<EOF
----
-title: "${TITLE}"
-date: "${DATE}"
-layout: layout.njk
----
-
-# ${TITLE}
-
-Текст статьи...
-EOF
+          echo "---" > posts/test.md
+          echo "title: \"${TITLE}\"" >> posts/test.md
+          echo "date: \"${DATE}\"" >> posts/test.md
+          echo "layout: layout.njk" >> posts/test.md
+          echo "---" >> posts/test.md
+          echo "" >> posts/test.md
+          echo "# ${TITLE}" >> posts/test.md
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
