@@ -174,17 +174,18 @@
         const image = document.getElementById('image').value;
         const content = easyMDE.value();
         
-        // Московское время
+        // МОСКОВСКОЕ ВРЕМЯ С МИНУТАМИ (полный ISO формат)
         const now = new Date();
         const mskTime = new Date(now.getTime() + (3 * 60 * 60 * 1000));
-        const date = mskTime.toISOString().slice(0, 10);
+        const isoString = mskTime.toISOString();
+        const dateTime = isoString.replace(/\.\d{3}Z$/, '+03:00');
         
         // Имя файла
         const slug = transliterate(title).toLowerCase();
         
         const fileContent = `---
 title: "${title}"
-date: "${date}"
+date: "${dateTime}"
 category: "${category}"
 description: "${description}"
 image: "/images/${image}"
@@ -193,7 +194,7 @@ layout: layout.njk
 
 <div class="article">
     <h1>{{ title }}</h1>
-    <div class="meta">📅 {{ date | date: "%d.%m.%Y" }} • {{ category }}</div>
+    <div class="meta">📅 {{ date | date: "%d.%m.%Y %H:%M" }} • {{ category }}</div>
 
     <img src="{{ image }}" alt="">
 
