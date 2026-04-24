@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Визуальный редактор статей | Угол Дома</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+<script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Inter, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #eef2f3, #f9fafb);
+    padding: 40px 20px;
+}
+
+/* контейнер как карточка */
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    background: rgba(255,255,255,0.9);
+    backdrop-filter: blur(10px);
+    padding: 32px;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+    transition: transform 0.3s ease;
+}
+
+.container:hover {
+    transform: translateY(-2px);
+}
+
+/* заголовок */
+h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 25px;
+    color: #0f172a;
+}
+
+/* лейблы */
+label {
+    display: block;
+    margin-top: 18px;
+    margin-bottom: 6px;
+    font-weight: 500;
+    font-size: 14px;
+    color: #334155;
+}
+
+/* инпуты */
+input, select {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    background: #fff;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: #038798;
+    box-shadow: 0 0 0 3px rgba(3,135,152,0.15);
+}
+
+/* кнопка */
+button {
+    margin-top: 25px;
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    background: linear-gradient(135deg, #038798, #06b6d4);
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(3,135,152,0.3);
+}
+
+/* заметки */
+.note {
+    margin-top: 20px;
+    font-size: 13px;
+    color: #475569;
+    background: #f1f5f9;
+    padding: 14px;
+    border-radius: 12px;
+    line-height: 1.6;
+}
+
+/* редактор */
+.editor-toolbar {
+    border-radius: 12px 12px 0 0;
+    border: 1px solid #e2e8f0;
+}
+
+.editor-toolbar button {
+    color: #334155 !important;
+}
+
+.editor-toolbar button:hover {
+    background: #e2e8f0 !important;
+}
+
+.CodeMirror {
+    border-radius: 0 0 12px 12px;
+    border: 1px solid #e2e8f0;
+    border-top: none;
+    min-height: 400px;
+    font-size: 14px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>📝 Визуальный редактор</h1>
+    
+    <label>Заголовок статьи</label>
+    <input type="text" id="title" placeholder="Как отремонтировать диван">
+
+    <label>Рубрика</label>
+    <select id="category">
+        <option value="Ремонт">Ремонт</option>
+        <option value="Идеи">Идеи</option>
+        <option value="Декор">Декор</option>
+    </select>
+
+    <label>Краткое описание</label>
+    <input type="text" id="description" placeholder="Пошаговая инструкция...">
+
+    <label>Имя картинки</label>
+    <input type="text" id="image" placeholder="divan.jpg">
+
+    <label>Текст статьи</label>
+    <textarea id="content"></textarea>
+
+    <button id="downloadBtn">📥 Скачать статью</button>
+
+    <div class="note">
+        💡 <strong>Подсказка:</strong><br>
+        Используй заголовки (#), списки и цитаты — редактор сам всё оформит красиво.
+    </div>
+</div>
+
+<script>
+    // Инициализация визуального редактора
+    const easyMDE = new EasyMDE({
+        element: document.getElementById('content'),
+        spellChecker: false,
+        placeholder: '## 1. Планирование\n\nСначала продумай всё...\n\n> 💡 Совет: Не забудь заложить бюджет\n\n## 2. Материалы\n\nНе обязательно покупать всё дорогое.',
+        toolbar: [
+            'bold', 'italic', 'heading', '|',
+            'unordered-list', 'ordered-list', '|',
+            'quote', 'link', 'image', '|',
+            'preview', 'side-by-side', 'fullscreen', '|',
+            'guide'
+        ],
+        status: false,
+        renderingConfig: {
+            codeSyntaxHighlighting: false,
+        }
+    });
+
+    // Функция транслитерации
+    function transliterate(word) {
+        const map = {
+            'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'e',
+            'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+            'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+            'ф': 'f', 'х': 'h', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'sch', 'ъ': '',
+            'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+            'А': 'a', 'Б': 'b', 'В': 'v', 'Г': 'g', 'Д': 'd', 'Е': 'e', 'Ё': 'e',
+            'Ж': 'zh', 'З': 'z', 'И': 'i', 'Й': 'y', 'К': 'k', 'Л': 'l', 'М': 'm',
+            'Н': 'n', 'О': 'o', 'П': 'p', 'Р': 'r', 'С': 's', 'Т': 't', 'У': 'u',
+            'Ф': 'f', 'Х': 'h', 'Ц': 'ts', 'Ч': 'ch', 'Ш': 'sh', 'Щ': 'sch', 'Ъ': '',
+            'Ы': 'y', 'Ь': '', 'Э': 'e', 'Ю': 'yu', 'Я': 'ya'
+        };
+        return word.split('').map(char => map[char] || char).join('').replace(/[^a-zA-Z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    }
+
+    // Функция для генерации ключевых слов
+    function generateKeywords(title, category) {
+        const words = title.split(' ');
+        const keywords = [...words, category, 'ремонт', 'своими руками', 'дом', 'уют', 'советы'];
+        return [...new Set(keywords)].slice(0, 10).join(', ');
+    }
+
+    document.getElementById('downloadBtn').addEventListener('click', function() {
+        const title = document.getElementById('title').value;
+        const category = document.getElementById('category').value;
+        const description = document.getElementById('description').value;
+        const image = document.getElementById('image').value;
+        const content = easyMDE.value();
+        
+        // МОСКОВСКОЕ ВРЕМЯ
+        const now = new Date();
+        const mskTime = new Date(now.getTime() + (3 * 60 * 60 * 1000));
+        const isoString = mskTime.toISOString();
+        const dateTime = isoString.replace(/\.\d{3}Z$/, '+03:00');
+        
+        // Форматирование даты для отображения
+        const year = mskTime.getFullYear();
+        const month = String(mskTime.getMonth() + 1).padStart(2, '0');
+        const day = String(mskTime.getDate()).padStart(2, '0');
+        const hours = String(mskTime.getHours()).padStart(2, '0');
+        const minutes = String(mskTime.getMinutes()).padStart(2, '0');
+        const displayDateTime = `${day}.${month}.${year} ${hours}:${minutes}`;
+        
+        // Имя файла
+        const slug = transliterate(title).toLowerCase();
+        const keywords = generateKeywords(title, category);
+        const siteUrl = 'https://уголдома.рф';
+        const articleUrl = `${siteUrl}/posts/${slug}/`;
+        const imageUrl = `${siteUrl}/images/${image}`;
+        
+        // Экранирование для HTML
+        const escapeHtml = (str) => {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        };
+        
+        const fileContent = `---
+title: "${title}"
+date: "${dateTime}"
+category: "${category}"
+description: "${description}"
+image: "/images/${image}"
+layout: layout.njk
+keywords: "${keywords}"
+author: "Угол Дома"
+robots: "index, follow"
+---
+
+<!-- SEO мета-теги -->
+<meta name="description" content="${escapeHtml(description)}">
+<meta name="keywords" content="${escapeHtml(keywords)}">
+<meta name="author" content="Угол Дома">
+<meta name="robots" content="index, follow">
+
+<!-- Open Graph -->
+<meta property="og:title" content="${escapeHtml(title)}">
+<meta property="og:description" content="${escapeHtml(description)}">
+<meta property="og:image" content="${imageUrl}">
+<meta property="og:url" content="${articleUrl}">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Угол Дома">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${escapeHtml(title)}">
+<meta name="twitter:description" content="${escapeHtml(description)}">
+<meta name="twitter:image" content="${imageUrl}">
+
+<!-- Canonical URL -->
+<link rel="canonical" href="${articleUrl}">
+
+<!-- Schema.org -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "${title.replace(/"/g, '\\"')}",
+  "description": "${description.replace(/"/g, '\\"')}",
+  "image": "${imageUrl}",
+  "author": {
+    "@type": "Organization",
+    "name": "Угол Дома"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Угол Дома"
+  },
+  "datePublished": "${dateTime}",
+  "dateModified": "${dateTime}",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "${articleUrl}"
+  }
+}
+</script>
+
+<div class="article">
+    <h1>${escapeHtml(title)}</h1>
+    <div class="meta">📅 ${displayDateTime} • ${category}</div>
+
+    <img src="/images/${escapeHtml(image)}" alt="${escapeHtml(title)}">
+
+${content}
+</div>
+`;
+        
+        // Скачивание
+        const blob = new Blob([fileContent], { type: 'text/markdown' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `${slug}.md`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+        
+        alert(`✅ Статья "${title}" сохранена!\n📁 Файл: ${slug}.md`);
+    });
+</script>
+
+</body>
+</html>
