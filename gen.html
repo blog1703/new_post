@@ -21,7 +21,6 @@ body {
     padding: 40px 20px;
 }
 
-/* контейнер как карточка */
 .container {
     max-width: 900px;
     margin: 0 auto;
@@ -37,7 +36,6 @@ body {
     transform: translateY(-2px);
 }
 
-/* заголовок */
 h1 {
     font-size: 28px;
     font-weight: 700;
@@ -45,7 +43,6 @@ h1 {
     color: #0f172a;
 }
 
-/* лейблы */
 label {
     display: block;
     margin-top: 18px;
@@ -55,7 +52,6 @@ label {
     color: #334155;
 }
 
-/* инпуты */
 input, select {
     width: 100%;
     padding: 12px 14px;
@@ -72,7 +68,6 @@ input:focus, select:focus {
     box-shadow: 0 0 0 3px rgba(3,135,152,0.15);
 }
 
-/* кнопка */
 button {
     margin-top: 25px;
     width: 100%;
@@ -92,7 +87,6 @@ button:hover {
     box-shadow: 0 8px 20px rgba(3,135,152,0.3);
 }
 
-/* заметки */
 .note {
     margin-top: 20px;
     font-size: 13px;
@@ -103,7 +97,6 @@ button:hover {
     line-height: 1.6;
 }
 
-/* редактор */
 .editor-toolbar {
     border-radius: 12px 12px 0 0;
     border: 1px solid #e2e8f0;
@@ -135,12 +128,8 @@ button:hover {
     <label>Заголовок статьи</label>
     <input type="text" id="title" placeholder="Как отремонтировать диван">
 
-    <label>Рубрика</label>
-    <select id="category">
-        <option value="Ремонт">Ремонт</option>
-        <option value="Идеи">Идеи</option>
-        <option value="Декор">Декор</option>
-    </select>
+    <label>Рубрика (можно ввести любую)</label>
+    <input type="text" id="category" placeholder="Ремонт" value="Ремонт">
 
     <label>Краткое описание</label>
     <input type="text" id="description" placeholder="Пошаговая инструкция...">
@@ -155,7 +144,9 @@ button:hover {
 
     <div class="note">
         💡 <strong>Подсказка:</strong><br>
-        Используй заголовки (#), списки и цитаты — редактор сам всё оформит красиво.
+        • Используй заголовки (#, ##, ###), списки и цитаты — редактор сам всё оформит красиво.<br>
+        • Рубрику можно писать любую: "Ремонт", "Идеи", "Декор", "Сад", "Кухня" и т.д.<br>
+        • Картинка будет оптимизирована через shortcode <code>{% image %}</code>.
     </div>
 </div>
 
@@ -202,14 +193,25 @@ button:hover {
         return [...new Set(keywords)].slice(0, 10).join(', ');
     }
 
+    // Экранирование для HTML
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
     document.getElementById('downloadBtn').addEventListener('click', function() {
         const title = document.getElementById('title').value;
         const category = document.getElementById('category').value;
         const description = document.getElementById('description').value;
         const image = document.getElementById('image').value;
-        const content = easyMDE.value();
+        let content = easyMDE.value();
         
-        // МОСКОВСКОЕ ВРЕМЯ
+        // Московское время
         const now = new Date();
         const mskTime = new Date(now.getTime() + (3 * 60 * 60 * 1000));
         const isoString = mskTime.toISOString();
@@ -226,20 +228,6 @@ button:hover {
         // Имя файла
         const slug = transliterate(title).toLowerCase();
         const keywords = generateKeywords(title, category);
-        const siteUrl = 'https://уголдома.рф';
-        const articleUrl = `${siteUrl}/posts/${slug}/`;
-        const imageUrl = `${siteUrl}/images/${image}`;
-        
-        // Экранирование для HTML
-        const escapeHtml = (str) => {
-            if (!str) return '';
-            return str.replace(/[&<>]/g, function(m) {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                return m;
-            });
-        };
         
         const fileContent = `---
 title: "${title}"
@@ -262,8 +250,8 @@ robots: "index, follow"
 <!-- Open Graph -->
 <meta property="og:title" content="${escapeHtml(title)}">
 <meta property="og:description" content="${escapeHtml(description)}">
-<meta property="og:image" content="${imageUrl}">
-<meta property="og:url" content="${articleUrl}">
+<meta property="og:image" content="https://уголдома.рф/images/${escapeHtml(image)}">
+<meta property="og:url" content="https://уголдома.рф/posts/${slug}/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Угол Дома">
 
@@ -271,10 +259,10 @@ robots: "index, follow"
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${escapeHtml(title)}">
 <meta name="twitter:description" content="${escapeHtml(description)}">
-<meta name="twitter:image" content="${imageUrl}">
+<meta name="twitter:image" content="https://уголдома.рф/images/${escapeHtml(image)}">
 
 <!-- Canonical URL -->
-<link rel="canonical" href="${articleUrl}">
+<link rel="canonical" href="https://уголдома.рф/posts/${slug}/">
 
 <!-- Schema.org -->
 <script type="application/ld+json">
@@ -283,7 +271,7 @@ robots: "index, follow"
   "@type": "Article",
   "headline": "${title.replace(/"/g, '\\"')}",
   "description": "${description.replace(/"/g, '\\"')}",
-  "image": "${imageUrl}",
+  "image": "https://уголдома.рф/images/${escapeHtml(image)}",
   "author": {
     "@type": "Organization",
     "name": "Угол Дома"
@@ -296,7 +284,7 @@ robots: "index, follow"
   "dateModified": "${dateTime}",
   "mainEntityOfPage": {
     "@type": "WebPage",
-    "@id": "${articleUrl}"
+    "@id": "https://уголдома.рф/posts/${slug}/"
   }
 }
 </script>
@@ -305,7 +293,7 @@ robots: "index, follow"
     <h1>${escapeHtml(title)}</h1>
     <div class="meta">📅 ${displayDateTime} • ${category}</div>
 
-    <img src="/images/${escapeHtml(image)}" alt="${escapeHtml(title)}">
+    {% image "/images/${escapeHtml(image)}", "${escapeHtml(title)}", "article-image" %}
 
 ${content}
 </div>
