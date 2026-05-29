@@ -51,12 +51,6 @@ function generateKeywords(title, category) {
     return unique.slice(0, 8).join(', ');
 }
 
-// Экранирование HTML
-function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
 // Экранирование для JSON
 function escapeJson(str) {
     if (!str) return '';
@@ -88,12 +82,9 @@ document.getElementById('downloadBtn').addEventListener('click', function() {
     
     const slug = transliterate(title);
     const keywords = generateKeywords(title, category);
-    const siteUrl = 'https://уголдома.рф';
-    const articleUrl = siteUrl + '/posts/' + slug + '/';
-    const imageUrl = image ? siteUrl + '/images/' + image : '';
     const readingTime = Math.max(1, Math.ceil(content.split(/\s+/).length / 200));
     
-    // ========== СБОРКА ФАЙЛА (ИСПРАВЛЕНО) ==========
+    // ========== СБОРКА ФАЙЛА ==========
     let fileContent = '';
     
     // Frontmatter
@@ -110,7 +101,8 @@ document.getElementById('downloadBtn').addEventListener('click', function() {
     fileContent += 'readingTime: "' + readingTime + '"\n';
     fileContent += '---\n\n';
     
-    // ===== ВАЖНО: ТОЛЬКО ЧИСТЫЙ MARKDOWN КОНТЕНТ, БЕЗ HTML-ОБЁРТКИ! =====
+    // ===== ТОЛЬКО SHORTCODE ДЛЯ КАРТИНКИ (без HTML-обёртки) =====
+    fileContent += '{% image "' + image + '", "' + title + '", "article-image" %}\n\n';
     fileContent += content + '\n';
     
     // Скачивание
